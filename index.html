@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>簡單版 mo.co 活動預測</title>
+  <style>
+    :root {
+      --bg: #0b0c10;
+      --card: #14161d;
+      --muted: #a9b0c3;
+      --text: #e8ebf5;
+      --border: #23273a;
+      --chip: #1f2436;
+      --good: #2bff88;
+      color-scheme: dark;
+
+      select {
+        background-color: var(--card);
+        color: var(--text);
+      }
+
+      /* 下拉選單項目 */
+      select option {
+        background-color: var(--card);
+        color: var(--text);
+      }
+    }
+
+    html,
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans CJK TC, "PingFang TC", "Microsoft JhengHei", sans-serif;
+      margin: 0;
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0 0 10px 0;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin: 10px 0 14px 0;
+    }
+
+    .ctrl {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 12px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    input,
+    select {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 13px;
+      outline: none;
+    }
+
+    input[type="datetime-local"] {
+      min-width: 220px;
+    }
+
+    .btn {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--chip);
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+    }
+
+    .btn:hover {
+      filter: brightness(1.08);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    @media (min-width:820px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px 14px;
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .t {
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--chip);
+      border: 1px solid var(--border);
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .tag.live {
+      color: var(--good);
+      border-color: rgba(43, 255, 136, .25);
+    }
+
+    ul {
+      margin: 8px 0 0 0;
+      padding-left: 18px;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    .pill {
+      background: var(--chip);
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .footer {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <h1>簡單版 mo.co 活動預測（未來 <span id="hoursLabel">12</span> 小時）</h1>
+
+    <div class="meta">
+      <div>現在時間（台灣）：<span class="mono" id="now"></span></div>
+      <div>循環：每 <span id="cycleMin"></span> 分鐘（每 <span id="slotMin"></span> 分鐘一格）</div>
+    </div>
+
+    <div class="row">
+      <div class="ctrl">
+        <div>
+          <label>顯示範圍（小時）</label><br>
+          <select id="range">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="6">6</option>
+            <option value="12" selected>12</option>
+            <option value="24">24</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ctrl">
+        <div>
+          <label>基準時間（台灣）</label><br>
+          <input id="baseTime" type="datetime-local">
+        </div>
+        <button class="btn" id="useNow">用現在</button>
+      </div>
+
+      <div class="ctrl">
+        <div>
+          <label>搜尋（事件 / 地圖）</label><br>
+          <input id="q" placeholder="例如：入侵 / 下水道 / 雙倍">
+        </div>
+        <button class="btn" id="clearQ">清除</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="small">
+          因為只是整理規律，若官方<br>更新遊戲預測就會失效。
+        </div>
+      </div>
+    </div>
+
+    <div class="grid" id="out"></div>
+
+    <div class="footer">
+      活動時間是 Dulu 依遊戲目前的輪替規律整理，僅供參考。
+    </div>
+  </div>
+
+  <script>
+    const DATA = { "tz": "Asia/Taipei", "anchor": "2026-01-22T20:50:00+08:00", "cycle_minutes": 300, "slot_minutes": 5, "schedule": [{ "i": 0, "events": [{ "event": "拯救戰術喵喵", "map": "孽生森林" }, { "event": "混沌騎士", "map": "下水道" }, { "event": "入侵警報", "map": "神聖花園" }, { "event": "混沌墮落精靈", "map": "腐化廣場" }, { "event": "混沌魚叉手", "map": "腐化碼頭" }] }, { "i": 1, "events": [{ "event": "入侵警報", "map": "精靈洞穴" }, { "event": "拯救戰術喵喵", "map": "貓貓入侵" }, { "event": "雙倍經驗值", "map": "皇家營房" }, { "event": "混沌蟲夫人", "map": "腐化城堡地下室" }] }, { "i": 2, "events": [{ "event": "重大研究", "map": "青翠廢墟" }, { "event": "混沌長矛跳跳龍", "map": "召喚庭院" }, { "event": "拯救戰術喵喵", "map": "城堡地下室" }, { "event": "重啟採集器", "map": "腐化下水道" }, { "event": "拯救戰術喵喵", "map": "腐化營房" }] }, { "i": 3, "events": [{ "event": "好多嗅探犬", "map": "青翠廢墟" }, { "event": "高能警報", "map": "召喚庭院" }, { "event": "拯救戰術喵喵", "map": "城堡地下室" }, { "event": "混沌跳斧怪", "map": "腐化下水道" }, { "event": "入侵警報", "map": "腐化營房" }] }, { "i": 4, "events": [{ "event": "X", "map": "X" }] }, { "i": 5, "events": [{ "event": "入侵警報", "map": "孽生森林" }, { "event": "混沌警鐘", "map": "下水道" }, { "event": "混沌老媽", "map": "神聖花園" }, { "event": "雙倍經驗值", "map": "腐化廣場" }, { "event": "重大研究", "map": "腐化碼頭" }] }, { "i": 6, "events": [{ "event": "拯救戰術喵喵", "map": "神殿村" }, { "event": "雙倍經驗值", "map": "城堡牆壁" }, { "event": "混沌衝擊怪-領袖", "map": "儀式廣場" }, { "event": "高能警報", "map": "霜掌碼頭" }, { "event": "混沌衝擊怪-領袖", "map": "腐化花園" }] }, { "i": 7, "events": [{ "event": "X", "map": "X" }] }, { "i": 8, "events": [{ "event": "拯救戰術喵喵", "map": "孽生森林" }, { "event": "入侵警報", "map": "下水道" }, { "event": "入侵警報", "map": "神聖花園" }, { "event": "重大研究", "map": "腐化廣場" }, { "event": "混沌箭頭", "map": "腐化碼頭" }] }, { "i": 9, "events": [{ "event": "入侵警報", "map": "精靈洞穴" }, { "event": "高能警報", "map": "貓貓入侵" }, { "event": "混沌劇毒噴射怪", "map": "皇家營房" }, { "event": "混沌劇毒噴射怪", "map": "腐化城堡地下室" }] }, { "i": 10, "events": [{ "event": "X", "map": "X" }] }, { "i": 11, "events": [{ "event": "拯救戰術喵喵", "map": "神殿村" }, { "event": "混沌噴射怪", "map": "城堡牆壁" }, { "event": "混沌墮落精靈", "map": "儀式廣場" }, { "event": "混沌魚叉手", "map": "霜掌碼頭" }, { "event": "雙倍經驗值", "map": "腐化花園" }] }, { "i": 12, "events": [{ "event": "雙倍經驗值", "map": "青翠廢墟" }, { "event": "好多嗅探犬", "map": "召喚庭院" }, { "event": "拯救戰術喵喵", "map": "城堡地下室" }, { "event": "混沌警鐘", "map": "腐化下水道" }, { "event": "高能警報", "map": "腐化營房" }] }, { "i": 13, "events": [{ "event": "X", "map": "X" }] }, { "i": 14, "events": [{ "event": "X", "map": "X" }] }, { "i": 15, "events": [{ "event": "入侵警報", "map": "孽生森林" }, { "event": "重新啟動MO.BOTS", "map": "下水道" }, { "event": "好多嗅探犬", "map": "神聖花園" }, { "event": "工程師求助", "map": "腐化廣場" }, { "event": "拯救戰術喵喵", "map": "腐化碼頭" }] }, { "i": 16, "events": [{ "event": "好多嗅探犬", "map": "精靈洞穴" }, { "event": "高能警報", "map": "貓貓入侵" }, { "event": "重新啟動MO.BOTS", "map": "皇家營房" }, { "event": "重新啟動MO.BOTS", "map": "腐化城堡地下室" }] }, { "i": 17, "events": [{ "event": "重大研究", "map": "青翠廢墟" }, { "event": "混沌花朵", "map": "召喚庭院" }, { "event": "拯救戰術喵喵", "map": "城堡地下室" }, { "event": "雙倍經驗值", "map": "腐化下水道" }, { "event": "混沌蟲夫人", "map": "腐化營房" }] }, { "i": 18, "events": [{ "event": "重啟採集器", "map": "神殿村" }, { "event": "混沌騎士", "map": "城堡牆壁" }, { "event": "拯救戰術喵喵", "map": "儀式廣場" }, { "event": "雙倍經驗值", "map": "霜掌碼頭" }, { "event": "拯救戰術喵喵", "map": "腐化花園" }] }, { "i": 19, "events": [{ "event": "X", "map": "X" }] }, { "i": 20, "events": [{ "event": "混沌鮮花", "map": "精靈洞穴" }, { "event": "拯救戰術喵喵", "map": "貓貓入侵" }, { "event": "雙倍經驗值", "map": "皇家營房" }, { "event": "雙倍經驗值", "map": "腐化城堡地下室" }] }, { "i": 21, "events": [{ "event": "入侵警報", "map": "孽生森林" }, { "event": "雙倍經驗值", "map": "下水道" }, { "event": "雙倍經驗值", "map": "神聖花園" }, { "event": "重大研究", "map": "腐化廣場" }, { "event": "mo.co機械師", "map": "腐化碼頭" }] }, { "i": 22, "events": [{ "event": "X", "map": "X" }] }, { "i": 23, "events": [{ "event": "好多嗅探犬", "map": "青翠廢墟" }, { "event": "工程師求助", "map": "召喚庭院" }, { "event": "混沌吹吹怪", "map": "城堡地下室" }, { "event": "混沌跳斧怪", "map": "腐化下水道" }, { "event": "入侵警報", "map": "腐化營房" }] }, { "i": 24, "events": [{ "event": "重啟採集器", "map": "神殿村" }, { "event": "重大研究", "map": "城堡牆壁" }, { "event": "雙倍經驗值", "map": "儀式廣場" }, { "event": "工程師求助", "map": "霜掌碼頭" }, { "event": "高能警報", "map": "腐化花園" }] }, { "i": 25, "events": [{ "event": "X", "map": "X" }] }, { "i": 26, "events": [{ "event": "入侵警報", "map": "青翠廢墟" }, { "event": "好多嗅探犬", "map": "召喚庭院" }, { "event": "雙倍經驗值", "map": "城堡地下室" }, { "event": "入侵警報", "map": "腐化下水道" }, { "event": "雙倍經驗值", "map": "腐化營房" }] }, { "i": 27, "events": [{ "event": "拯救戰術喵喵", "map": "神殿村" }, { "event": "高能警報", "map": "城堡牆壁" }, { "event": "雙倍經驗值", "map": "儀式廣場" }, { "event": "混沌魚叉手", "map": "霜掌碼頭" }, { "event": "雙倍經驗值", "map": "腐化花園" }] }, { "i": 28, "events": [{ "event": "重新啟動MO.BOTS", "map": "孽生森林" }, { "event": "重啟採集器", "map": "下水道" }, { "event": "拯救戰術喵喵", "map": "神聖花園" }, { "event": "工程師求助", "map": "腐化廣場" }, { "event": "mo.co機械師", "map": "腐化碼頭" }] }, { "i": 29, "events": [{ "event": "X", "map": "X" }] }, { "i": 30, "events": [{ "event": "混沌鮮花", "map": "精靈洞穴" }, { "event": "混沌箭頭", "map": "貓貓入侵" }, { "event": "重新啟動MO.BOTS", "map": "皇家營房" }, { "event": "雙倍經驗值", "map": "腐化城堡地下室" }] }, { "i": 31, "events": [{ "event": "X", "map": "X" }] }, { "i": 32, "events": [{ "event": "雙倍經驗值", "map": "神殿村" }, { "event": "高能警報", "map": "城堡牆壁" }, { "event": "高能警報", "map": "儀式廣場" }, { "event": "混沌魚叉手", "map": "霜掌碼頭" }, { "event": "工程師求助", "map": "腐化花園" }] }, { "i": 33, "events": [{ "event": "X", "map": "X" }] }, { "i": 34, "events": [{ "event": "好多嗅探犬", "map": "孽生森林" }, { "event": "雙倍經驗值", "map": "下水道" }, { "event": "重啟採集器", "map": "神聖花園" }, { "event": "mo.co機械師", "map": "腐化廣場" }, { "event": "高能警報", "map": "腐化碼頭" }] }, { "i": 35, "events": [{ "event": "雙倍經驗值", "map": "青翠廢墟" }, { "event": "雙倍經驗值", "map": "召喚庭院" }, { "event": "好多嗅探犬", "map": "城堡地下室" }, { "event": "入侵警報", "map": "腐化下水道" }, { "event": "重啟採集器", "map": "腐化營房" }] }, { "i": 36, "events": [{ "event": "工程師求助", "map": "精靈洞穴" }, { "event": "雙倍經驗值", "map": "貓貓入侵" }, { "event": "高能警報", "map": "皇家營房" }, { "event": "高能警報", "map": "腐化城堡地下室" }] }, { "i": 37, "events": [{ "event": "X", "map": "X" }] }, { "i": 38, "events": [{ "event": "X", "map": "X" }] }, { "i": 39, "events": [{ "event": "X", "map": "X" }] }, { "i": 40, "events": [{ "event": "工程師求助", "map": "神殿村" }, { "event": "清道夫群集", "map": "城堡牆壁" }, { "event": "拯救戰術喵喵", "map": "儀式廣場" }, { "event": "重新啟動MO.BOTS", "map": "霜掌碼頭" }, { "event": "好多嗅探犬", "map": "腐化花園" }] }, { "i": 41, "events": [{ "event": "雙倍經驗值", "map": "青翠廢墟" }, { "event": "雙倍經驗值", "map": "召喚庭院" }, { "event": "工程師求助", "map": "城堡地下室" }, { "event": "高能警報", "map": "腐化下水道" }, { "event": "混沌船長", "map": "腐化營房" }] }, { "i": 42, "events": [{ "event": "雙倍經驗值", "map": "精靈洞穴" }, { "event": "雙倍經驗值", "map": "貓貓入侵" }, { "event": "高能警報", "map": "皇家營房" }, { "event": "高能警報", "map": "腐化城堡地下室" }] }, { "i": 43, "events": [{ "event": "重新啟動MO.BOTS", "map": "孽生森林" }, { "event": "混沌衝鋒怪", "map": "下水道" }, { "event": "高能警報", "map": "神聖花園" }, { "event": "mo.co機械師", "map": "腐化廣場" }, { "event": "雙倍經驗值", "map": "腐化碼頭" }] }, { "i": 44, "events": [{ "event": "拯救戰術喵喵", "map": "精靈洞穴" }, { "event": "高能警報", "map": "貓貓入侵" }, { "event": "拯救戰術喵喵", "map": "皇家營房" }, { "event": "工程師求助", "map": "腐化城堡地下室" }] }, { "i": 45, "events": [{ "event": "重新啟動MO.BOTS", "map": "青翠廢墟" }, { "event": "重新啟動MO.BOTS", "map": "召喚庭院" }, { "event": "混沌吹吹怪", "map": "城堡地下室" }, { "event": "混沌跳斧怪", "map": "腐化下水道" }, { "event": "mo.co機械師", "map": "腐化營房" }] }, { "i": 46, "events": [{ "event": "雙倍經驗值", "map": "孽生森林" }, { "event": "混沌噴射怪", "map": "下水道" }, { "event": "雙倍經驗值", "map": "神聖花園" }, { "event": "mo.co機械師", "map": "腐化廣場" }, { "event": "mo.co機械師", "map": "腐化碼頭" }] }, { "i": 47, "events": [{ "event": "X", "map": "X" }] }, { "i": 48, "events": [{ "event": "好多嗅探犬", "map": "神殿村" }, { "event": "雙倍經驗值", "map": "城堡牆壁" }, { "event": "入侵警報", "map": "儀式廣場" }, { "event": "mo.co機械師", "map": "霜掌碼頭" }, { "event": "混沌老媽", "map": "腐化花園" }] }, { "i": 49, "events": [{ "event": "X", "map": "X" }] }, { "i": 50, "events": [{ "event": "混沌鮮花", "map": "精靈洞穴" }, { "event": "混沌箭頭", "map": "貓貓入侵" }, { "event": "混沌劇毒噴射怪", "map": "皇家營房" }, { "event": "混沌劇毒噴射怪", "map": "腐化城堡地下室" }] }, { "i": 51, "events": [{ "event": "重啟採集器", "map": "青翠廢墟" }, { "event": "混沌碎骨怪", "map": "召喚庭院" }, { "event": "入侵警報", "map": "城堡地下室" }, { "event": "重新啟動MO.BOTS", "map": "腐化下水道" }, { "event": "重大研究", "map": "腐化營房" }] }, { "i": 52, "events": [{ "event": "重新啟動MO.BOTS", "map": "神殿村" }, { "event": "雙倍經驗值", "map": "城堡牆壁" }, { "event": "雙倍經驗值", "map": "儀式廣場" }, { "event": "重啟採集器", "map": "霜掌碼頭" }, { "event": "混沌冰霜破壞獸", "map": "腐化花園" }] }, { "i": 53, "events": [{ "event": "X", "map": "X" }] }, { "i": 54, "events": [{ "event": "X", "map": "X" }] }, { "i": 55, "events": [{ "event": "工程師求助", "map": "孽生森林" }, { "event": "入侵警報", "map": "下水道" }, { "event": "重大研究", "map": "神聖花園" }, { "event": "重新啟動MO.BOTS", "map": "腐化廣場" }, { "event": "雙倍經驗值", "map": "腐化碼頭" }] }, { "i": 56, "events": [{ "event": "X", "map": "X" }] }, { "i": 57, "events": [{ "event": "入侵警報", "map": "神殿村" }, { "event": "清道夫群集", "map": "城堡牆壁" }, { "event": "拯救戰術喵喵", "map": "儀式廣場" }, { "event": "雙倍經驗值", "map": "霜掌碼頭" }, { "event": "高能警報", "map": "腐化花園" }] }, { "i": 58, "events": [{ "event": "雙倍經驗值", "map": "青翠廢墟" }, { "event": "混沌狂怒獸", "map": "召喚庭院" }, { "event": "拯救戰術喵喵", "map": "城堡地下室" }, { "event": "混沌吹吹怪", "map": "腐化下水道" }, { "event": "混沌劇毒噴射怪", "map": "腐化營房" }] }, { "i": 59, "events": [{ "event": "X", "map": "X" }] }] };
+
+    // --- helpers ---
+    function pad2(n) { return String(n).padStart(2, '0'); }
+
+    function toTaipeiDate(d) {
+      const fmt = new Intl.DateTimeFormat('sv-SE', {
+        timeZone: DATA.tz,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      });
+      return fmt.format(d).replace(' ', 'T'); // YYYY-MM-DDTHH:mm:ss
+    }
+
+    function parseDTLocalInputToDate(value) {
+      const m = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+      if (!m) return null;
+      const Y = +m[1], Mo = +m[2], D = +m[3], H = +m[4], Mi = +m[5];
+      // Taiwan fixed +08:00
+      const utcMs = Date.UTC(Y, Mo - 1, D, H - 8, Mi, 0);
+      return new Date(utcMs);
+    }
+
+    function formatTaipeiHM(d) {
+      const fmt = new Intl.DateTimeFormat('zh-Hant-TW', {
+        timeZone: DATA.tz,
+        hour: '2-digit', minute: '2-digit', hour12: false
+      });
+      return fmt.format(d);
+    }
+
+    function formatTaipeiFull(d) {
+      const fmt = new Intl.DateTimeFormat('zh-Hant-TW', {
+        timeZone: DATA.tz,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false
+      });
+      return fmt.format(d);
+    }
+
+    function floorToSlot(d) {
+      const ms = d.getTime();
+      const slotMs = DATA.slot_minutes * 60 * 1000;
+      const offsetMs = 8 * 60 * 60 * 1000; // +08
+      const aligned = Math.floor((ms + offsetMs) / slotMs) * slotMs - offsetMs;
+      return new Date(aligned);
+    }
+
+    function slotIndexForDate(d) {
+      const anchor = new Date(DATA.anchor);
+      const deltaMin = Math.floor((d.getTime() - anchor.getTime()) / 60000);
+      const mod = ((deltaMin % DATA.cycle_minutes) + DATA.cycle_minutes) % DATA.cycle_minutes;
+      return Math.floor(mod / DATA.slot_minutes);
+    }
+
+    function matchesQuery(events, q) {
+      if (!q) return true;
+      const qq = q.trim().toLowerCase();
+      return events.some(x => (x.event + " " + x.map).toLowerCase().includes(qq));
+    }
+
+    // --- render ---
+    function render() {
+      const rangeHours = parseInt(document.getElementById('range').value, 10);
+      document.getElementById('hoursLabel').textContent = String(rangeHours);
+
+      const q = document.getElementById('q').value || "";
+      const out = document.getElementById('out');
+      out.innerHTML = "";
+
+      const now = new Date();
+      const baseInput = document.getElementById('baseTime').value;
+      let base = baseInput ? parseDTLocalInputToDate(baseInput) : now;
+      if (!base) base = now;
+
+      const start = floorToSlot(base); // include current slot
+      const slotsToShow = Math.floor((rangeHours * 60) / DATA.slot_minutes) + 1;
+
+      for (let k = 0; k < slotsToShow; k++) {
+        const t = new Date(start.getTime() + k * DATA.slot_minutes * 60 * 1000);
+        const idx = slotIndexForDate(t);
+        const events = DATA.schedule[idx].events;
+
+        if (!matchesQuery(events, q)) continue;
+
+        const isLive = (t.getTime() === floorToSlot(now).getTime());
+
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        const top = document.createElement('div');
+        top.className = 'top';
+
+        const left = document.createElement('div');
+        left.innerHTML = `<div class="t">${formatTaipeiHM(t)}</div><div class="sub">${formatTaipeiFull(t)}</div>`;
+
+        const right = document.createElement('div');
+        right.innerHTML = isLive ? `<span class="tag live">進行中</span>` : `<span class="tag">預測</span>`;
+
+        top.appendChild(left);
+        top.appendChild(right);
+
+        const ul = document.createElement('ul');
+        for (const it of events) {
+          const li = document.createElement('li');
+          li.innerHTML = `<span class="mono">${it.event}</span> <span class="pill">${it.map}</span>`;
+          ul.appendChild(li);
+        }
+
+        card.appendChild(top);
+        card.appendChild(ul);
+        out.appendChild(card);
+      }
+
+      if (out.children.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'card';
+        empty发现 = undefined;
+        empty.innerHTML = `<div class="t">沒有符合搜尋條件的項目</div><div class="sub">清除搜尋或加大顯示範圍。</div>`;
+        out.appendChild(empty);
+      }
+    }
+
+    function tickNow() {
+      const now = new Date();
+      document.getElementById('now').textContent = formatTaipeiFull(now) + ':' + pad2(now.getSeconds());
+    }
+
+    function setBaseToNow() {
+      const now = new Date();
+      const s = toTaipeiDate(now);
+      document.getElementById('baseTime').value = s.slice(0, 16);
+      render();
+    }
+
+    // init constants in UI
+    document.getElementById('cycleMin').textContent = String(DATA.cycle_minutes);
+    document.getElementById('slotMin').textContent = String(DATA.slot_minutes);
+
+    // events
+    document.getElementById('range').addEventListener('change', render);
+    document.getElementById('q').addEventListener('input', render);
+    document.getElementById('clearQ').addEventListener('click', () => {
+      document.getElementById('q').value = '';
+      render();
+    });
+    document.getElementById('useNow').addEventListener('click', setBaseToNow);
+    document.getElementById('baseTime').addEventListener('change', render);
+
+    // initial
+    setBaseToNow();
+    tickNow();
+    setInterval(tickNow, 250);
+    setInterval(render, 30000);
+  </script>
+</body>
+
+</html>
