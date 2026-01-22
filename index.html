@@ -241,7 +241,7 @@
 
       <div class="ctrl">
         <div class="small">
-          因為只是整理規律，若官方<br>更新遊戲，預測就會失效。
+          因為只是整理規律，若官方<br>更新遊戲預測就會失效。
         </div>
       </div>
     </div>
@@ -329,17 +329,22 @@
       let base = baseInput ? parseDTLocalInputToDate(baseInput) : now;
       if (!base) base = now;
 
+      const liveSlot = floorToSlot(now).getTime();
+
       const start = floorToSlot(base); // include current slot
       const slotsToShow = Math.floor((rangeHours * 60) / DATA.slot_minutes) + 1;
 
       for (let k = 0; k < slotsToShow; k++) {
         const t = new Date(start.getTime() + k * DATA.slot_minutes * 60 * 1000);
+
+        if (t.getTime() < liveSlot) continue;
+
         const idx = slotIndexForDate(t);
         const events = DATA.schedule[idx].events;
 
         if (!matchesQuery(events, q)) continue;
 
-        const isLive = (t.getTime() === floorToSlot(now).getTime());
+        const isLive = (t.getTime() === liveSlot);
 
         const card = document.createElement('div');
         card.className = 'card';
@@ -371,11 +376,11 @@
       if (out.children.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'card';
-        empty发现 = undefined;
         empty.innerHTML = `<div class="t">沒有符合搜尋條件的項目</div><div class="sub">清除搜尋或加大顯示範圍。</div>`;
         out.appendChild(empty);
       }
     }
+
 
     function tickNow() {
       const now = new Date();
