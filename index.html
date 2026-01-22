@@ -16,6 +16,15 @@
       --good: #2bff88;
       color-scheme: dark;
 
+      .hl {
+        padding: 0 3px;
+        border-radius: 6px;
+        background: rgba(43, 255, 136, .18);
+        color: var(--good);
+        font-weight: 700;
+      }
+
+
       select {
         background-color: var(--card);
         color: var(--text);
@@ -314,6 +323,35 @@
       return events.some(x => (x.event + " " + x.map).toLowerCase().includes(qq));
     }
 
+    function escHtml(s) {
+      return String(s)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function highlightText(text, q) {
+      const t = String(text);
+      const query = (q || "").trim();
+      if (!query) return escHtml(t);
+
+      const safe = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(safe, 'gi');
+
+      const parts = t.split(re);
+      const hits = t.match(re);
+      if (!hits) return escHtml(t);
+
+      let out = "";
+      for (let i = 0; i < parts.length; i++) {
+        out += escHtml(parts[i]);
+        if (i < hits.length) out += `<span class="hl">${escHtml(hits[i])}</span>`;
+      }
+      return out;
+    }
+
     // --- render ---
     function render() {
       const rangeHours = parseInt(document.getElementById('range').value, 10);
@@ -363,7 +401,9 @@
         const ul = document.createElement('ul');
         for (const it of events) {
           const li = document.createElement('li');
-          li.innerHTML = `<span class="mono">${it.event}</span> <span class="pill">${it.map}</span>`;
+          li.innerHTML =
+            `<span class="mono">${highlightText(it.event, q)}</span> ` +
+            `<span class="pill">${highlightText(it.map, q)}</span>`;
           ul.appendChild(li);
         }
 
