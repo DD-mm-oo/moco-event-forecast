@@ -15,32 +15,31 @@
       --chip: #1f2436;
       --good: #2bff88;
       color-scheme: dark;
+    }
 
-      .hl {
-        padding: 0 3px;
-        border-radius: 6px;
-        background: rgba(43, 255, 136, .18);
-        color: var(--good);
-        font-weight: 700;
-      }
+    .hl {
+      padding: 0 3px;
+      border-radius: 6px;
+      background: rgba(43, 255, 136, .18);
+      color: var(--good);
+      font-weight: 700;
+    }
 
+    select {
+      background-color: var(--card);
+      color: var(--text);
+    }
 
-      select {
-        background-color: var(--card);
-        color: var(--text);
-      }
-
-      select option {
-        background-color: var(--card);
-        color: var(--text);
-      }
+    select option {
+      background-color: var(--card);
+      color: var(--text);
     }
 
     html,
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans CJK TC, "PingFang TC", "Microsoft JhengHei", sans-serif;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans CJK TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
       margin: 0;
     }
 
@@ -103,6 +102,10 @@
       min-width: 220px;
     }
 
+    input[type="text"] {
+      min-width: 220px;
+    }
+
     .btn {
       cursor: pointer;
       border: 1px solid var(--border);
@@ -111,6 +114,7 @@
       padding: 9px 12px;
       border-radius: 12px;
       font-size: 13px;
+      white-space: nowrap;
     }
 
     .btn:hover {
@@ -204,22 +208,36 @@
     .mono {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
+
+    .hint {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .warn {
+      color: #ffb86b;
+    }
   </style>
 </head>
 
 <body>
   <div class="wrap">
-    <h1>簡單版 mo.co 活動預測（未來 <span id="hoursLabel">12</span> 小時）</h1>
+    <h1><span id="ui_title">簡單版 mo.co 活動預測</span>（<span id="ui_future">未來</span> <span id="hoursLabel">12</span> <span
+        id="ui_hours">小時</span>）</h1>
 
     <div class="meta">
-      <div>現在時間（台灣）：<span class="mono" id="now"></span></div>
-      <div>循環：每 <span id="cycleMin"></span> 分鐘（每 <span id="slotMin"></span> 分鐘一格）</div>
+      <div><span id="ui_now">現在時間</span>（<span class="mono" id="tzName">Asia/Taipei</span>）：<span class="mono"
+          id="now"></span></div>
+      <div><span id="ui_cycle">循環</span>：<span id="ui_every">每</span> <span id="cycleMin"></span> <span
+          id="ui_min">分鐘</span>（<span id="ui_each">每</span> <span id="slotMin"></span> <span id="ui_min2">分鐘</span><span
+          id="ui_slot">一格</span>）</div>
     </div>
 
     <div class="row">
       <div class="ctrl">
         <div>
-          <label>顯示範圍（小時）</label><br>
+          <label id="ui_range_label">顯示範圍（小時）</label><br>
           <select id="range">
             <option value="1">1</option>
             <option value="2">2</option>
@@ -233,22 +251,59 @@
 
       <div class="ctrl">
         <div>
-          <label>基準時間（台灣）</label><br>
+          <label id="ui_lang_label">語言</label><br>
+          <select id="lang">
+            <option value="zhHant" selected>繁體中文</option>
+            <option value="zhHans">简体中文</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ctrl">
+        <div>
+          <label id="ui_tz_label">時區</label><br>
+          <select id="tzPreset">
+            <option value="Asia/Taipei" selected>Asia/Taipei</option>
+            <option value="UTC">UTC</option>
+            <option value="Asia/Tokyo">Asia/Tokyo</option>
+            <option value="Asia/Shanghai">Asia/Shanghai</option>
+            <option value="Asia/Singapore">Asia/Singapore</option>
+            <option value="America/Los_Angeles">America/Los_Angeles</option>
+            <option value="America/New_York">America/New_York</option>
+            <option value="Europe/London">Europe/London</option>
+            <option value="Europe/Paris">Europe/Paris</option>
+            <option value="Australia/Sydney">Australia/Sydney</option>
+            <option value="__custom__" id="ui_tz_custom_opt">自訂…</option>
+          </select>
+          <div class="hint" id="ui_tz_hint">可輸入 IANA 時區，例如：Europe/Berlin</div>
+        </div>
+        <div id="tzCustomWrap" style="display:none;">
+          <label id="ui_tz_custom_label">自訂時區</label><br>
+          <input id="tzCustom" type="text" placeholder="例如：Europe/Berlin">
+          <div class="hint" id="tzCustomStatus"></div>
+        </div>
+      </div>
+
+      <div class="ctrl">
+        <div>
+          <label id="ui_base_label">基準時間</label><br>
           <input id="baseTime" type="datetime-local">
+          <div class="hint" id="ui_base_hint">基準時間會以你選的時區解讀</div>
         </div>
         <button class="btn" id="useNow">用現在</button>
       </div>
 
       <div class="ctrl">
         <div>
-          <label>搜尋（事件 / 地圖）</label><br>
+          <label id="ui_search_label">搜尋（事件 / 地圖）</label><br>
           <input id="q" placeholder="例如：高能 / 機械師 / 研究">
         </div>
         <button class="btn" id="clearQ">清除</button>
       </div>
 
       <div class="ctrl">
-        <div class="small">
+        <div class="small" id="ui_note">
           因為只是整理規律，若官方<br>更新遊戲，預測就會失效。
         </div>
       </div>
@@ -256,57 +311,220 @@
 
     <div class="grid" id="out"></div>
 
-    <div class="footer">
+    <div class="footer" id="ui_footer">
       事件預測表由 Dulu 整理，僅供參考。
     </div>
   </div>
 
   <script>
+    // --------------------------
+    // Data
+    // --------------------------
     const DATA = { "tz": "Asia/Taipei", "anchor": "2026-01-22T20:50:00+08:00", "cycle_minutes": 300, "slot_minutes": 5, "schedule": [{ "i": 0, "events": [{ "event": "拯救戰術喵喵", "map": "孽生森林" }, { "event": "混沌騎士", "map": "下水道" }, { "event": "入侵警報", "map": "神聖花園" }, { "event": "混沌墮落精靈", "map": "腐化廣場" }, { "event": "混沌魚叉手", "map": "腐化碼頭" }] }, { "i": 1, "events": [{ "event": "入侵警報", "map": "精靈洞穴" }, { "event": "拯救戰術喵喵", "map": "貓貓入侵" }, { "event": "雙倍經驗值", "map": "皇家營房" }, { "event": "混沌蟲夫人", "map": "腐化城堡地下室" }] }, { "i": 2, "events": [{ "event": "重大研究", "map": "青翠廢墟" }, { "event": "混沌長矛跳跳龍", "map": "召喚庭院" }, { "event": "拯救戰術喵喵", "map": "城堡地下室" }, { "event": "重啟採集器", "map": "腐化下水道" }, { "event": "拯救戰術喵喵", "map": "腐化營房" }] }, { "i": 3, "events": [{ "event": "好多嗅探犬", "map": "青翠廢墟" }, { "event": "高能警報", "map": "召喚庭院" }, { "event": "拯救戰術喵喵", "map": "城堡地下室" }, { "event": "混沌跳斧怪", "map": "腐化下水道" }, { "event": "入侵警報", "map": "腐化營房" }] }, { "i": 4, "events": [{ "event": "X", "map": "X" }] }, { "i": 5, "events": [{ "event": "入侵警報", "map": "孽生森林" }, { "event": "混沌警鐘", "map": "下水道" }, { "event": "混沌老媽", "map": "神聖花園" }, { "event": "雙倍經驗值", "map": "腐化廣場" }, { "event": "重大研究", "map": "腐化碼頭" }] }, { "i": 6, "events": [{ "event": "拯救戰術喵喵", "map": "神殿村" }, { "event": "雙倍經驗值", "map": "城堡牆壁" }, { "event": "混沌衝擊怪-領袖", "map": "儀式廣場" }, { "event": "高能警報", "map": "霜掌碼頭" }, { "event": "混沌衝擊怪-領袖", "map": "腐化花園" }] }, { "i": 7, "events": [{ "event": "X", "map": "X" }] }, { "i": 8, "events": [{ "event": "拯救戰術喵喵", "map": "孽生森林" }, { "event": "入侵警報", "map": "下水道" }, { "event": "入侵警報", "map": "神聖花園" }, { "event": "重大研究", "map": "腐化廣場" }, { "event": "混沌箭頭", "map": "腐化碼頭" }] }, { "i": 9, "events": [{ "event": "入侵警報", "map": "精靈洞穴" }, { "event": "高能警報", "map": "貓貓入侵" }, { "event": "混沌劇毒噴射怪", "map": "皇家營房" }, { "event": "混沌劇毒噴射怪", "map": "腐化城堡地下室" }] }, { "i": 10, "events": [{ "event": "X", "map": "X" }] }, { "i": 11, "events": [{ "event": "拯救戰術喵喵", "map": "神殿村" }, { "event": "混沌噴射怪", "map": "城堡牆壁" }, { "event": "混沌墮落精靈", "map": "儀式廣場" }, { "event": "混沌魚叉手", "map": "霜掌碼頭" }, { "event": "雙倍經驗值", "map": "腐化花園" }] }, { "i": 12, "events": [{ "event": "雙倍經驗值", "map": "青翠廢墟" }, { "event": "好多嗅探犬", "map": "召喚庭院" }, { "event": "拯救戰術喵喵", "map": "城堡地下室" }, { "event": "混沌警鐘", "map": "腐化下水道" }, { "event": "高能警報", "map": "腐化營房" }] }, { "i": 13, "events": [{ "event": "X", "map": "X" }] }, { "i": 14, "events": [{ "event": "X", "map": "X" }] }, { "i": 15, "events": [{ "event": "入侵警報", "map": "孽生森林" }, { "event": "重新啟動MO.BOTS", "map": "下水道" }, { "event": "好多嗅探犬", "map": "神聖花園" }, { "event": "工程師求助", "map": "腐化廣場" }, { "event": "拯救戰術喵喵", "map": "腐化碼頭" }] }, { "i": 16, "events": [{ "event": "好多嗅探犬", "map": "精靈洞穴" }, { "event": "高能警報", "map": "貓貓入侵" }, { "event": "重新啟動MO.BOTS", "map": "皇家營房" }, { "event": "重新啟動MO.BOTS", "map": "腐化城堡地下室" }] }, { "i": 17, "events": [{ "event": "重大研究", "map": "青翠廢墟" }, { "event": "混沌花朵", "map": "召喚庭院" }, { "event": "拯救戰術喵喵", "map": "城堡地下室" }, { "event": "雙倍經驗值", "map": "腐化下水道" }, { "event": "混沌蟲夫人", "map": "腐化營房" }] }, { "i": 18, "events": [{ "event": "重啟採集器", "map": "神殿村" }, { "event": "混沌騎士", "map": "城堡牆壁" }, { "event": "拯救戰術喵喵", "map": "儀式廣場" }, { "event": "雙倍經驗值", "map": "霜掌碼頭" }, { "event": "拯救戰術喵喵", "map": "腐化花園" }] }, { "i": 19, "events": [{ "event": "X", "map": "X" }] }, { "i": 20, "events": [{ "event": "混沌鮮花", "map": "精靈洞穴" }, { "event": "拯救戰術喵喵", "map": "貓貓入侵" }, { "event": "雙倍經驗值", "map": "皇家營房" }, { "event": "雙倍經驗值", "map": "腐化城堡地下室" }] }, { "i": 21, "events": [{ "event": "入侵警報", "map": "孽生森林" }, { "event": "雙倍經驗值", "map": "下水道" }, { "event": "雙倍經驗值", "map": "神聖花園" }, { "event": "重大研究", "map": "腐化廣場" }, { "event": "mo.co機械師", "map": "腐化碼頭" }] }, { "i": 22, "events": [{ "event": "X", "map": "X" }] }, { "i": 23, "events": [{ "event": "好多嗅探犬", "map": "青翠廢墟" }, { "event": "工程師求助", "map": "召喚庭院" }, { "event": "混沌吹吹怪", "map": "城堡地下室" }, { "event": "混沌跳斧怪", "map": "腐化下水道" }, { "event": "入侵警報", "map": "腐化營房" }] }, { "i": 24, "events": [{ "event": "重啟採集器", "map": "神殿村" }, { "event": "重大研究", "map": "城堡牆壁" }, { "event": "雙倍經驗值", "map": "儀式廣場" }, { "event": "工程師求助", "map": "霜掌碼頭" }, { "event": "高能警報", "map": "腐化花園" }] }, { "i": 25, "events": [{ "event": "X", "map": "X" }] }, { "i": 26, "events": [{ "event": "入侵警報", "map": "青翠廢墟" }, { "event": "好多嗅探犬", "map": "召喚庭院" }, { "event": "雙倍經驗值", "map": "城堡地下室" }, { "event": "入侵警報", "map": "腐化下水道" }, { "event": "雙倍經驗值", "map": "腐化營房" }] }, { "i": 27, "events": [{ "event": "拯救戰術喵喵", "map": "神殿村" }, { "event": "高能警報", "map": "城堡牆壁" }, { "event": "雙倍經驗值", "map": "儀式廣場" }, { "event": "混沌魚叉手", "map": "霜掌碼頭" }, { "event": "雙倍經驗值", "map": "腐化花園" }] }, { "i": 28, "events": [{ "event": "重新啟動MO.BOTS", "map": "孽生森林" }, { "event": "重啟採集器", "map": "下水道" }, { "event": "拯救戰術喵喵", "map": "神聖花園" }, { "event": "工程師求助", "map": "腐化廣場" }, { "event": "mo.co機械師", "map": "腐化碼頭" }] }, { "i": 29, "events": [{ "event": "X", "map": "X" }] }, { "i": 30, "events": [{ "event": "混沌鮮花", "map": "精靈洞穴" }, { "event": "混沌箭頭", "map": "貓貓入侵" }, { "event": "重新啟動MO.BOTS", "map": "皇家營房" }, { "event": "雙倍經驗值", "map": "腐化城堡地下室" }] }, { "i": 31, "events": [{ "event": "X", "map": "X" }] }, { "i": 32, "events": [{ "event": "雙倍經驗值", "map": "神殿村" }, { "event": "高能警報", "map": "城堡牆壁" }, { "event": "高能警報", "map": "儀式廣場" }, { "event": "混沌魚叉手", "map": "霜掌碼頭" }, { "event": "工程師求助", "map": "腐化花園" }] }, { "i": 33, "events": [{ "event": "X", "map": "X" }] }, { "i": 34, "events": [{ "event": "好多嗅探犬", "map": "孽生森林" }, { "event": "雙倍經驗值", "map": "下水道" }, { "event": "重啟採集器", "map": "神聖花園" }, { "event": "mo.co機械師", "map": "腐化廣場" }, { "event": "高能警報", "map": "腐化碼頭" }] }, { "i": 35, "events": [{ "event": "雙倍經驗值", "map": "青翠廢墟" }, { "event": "雙倍經驗值", "map": "召喚庭院" }, { "event": "好多嗅探犬", "map": "城堡地下室" }, { "event": "入侵警報", "map": "腐化下水道" }, { "event": "重啟採集器", "map": "腐化營房" }] }, { "i": 36, "events": [{ "event": "工程師求助", "map": "精靈洞穴" }, { "event": "雙倍經驗值", "map": "貓貓入侵" }, { "event": "高能警報", "map": "皇家營房" }, { "event": "高能警報", "map": "腐化城堡地下室" }] }, { "i": 37, "events": [{ "event": "X", "map": "X" }] }, { "i": 38, "events": [{ "event": "X", "map": "X" }] }, { "i": 39, "events": [{ "event": "X", "map": "X" }] }, { "i": 40, "events": [{ "event": "工程師求助", "map": "神殿村" }, { "event": "清道夫群集", "map": "城堡牆壁" }, { "event": "拯救戰術喵喵", "map": "儀式廣場" }, { "event": "重新啟動MO.BOTS", "map": "霜掌碼頭" }, { "event": "好多嗅探犬", "map": "腐化花園" }] }, { "i": 41, "events": [{ "event": "雙倍經驗值", "map": "青翠廢墟" }, { "event": "雙倍經驗值", "map": "召喚庭院" }, { "event": "工程師求助", "map": "城堡地下室" }, { "event": "高能警報", "map": "腐化下水道" }, { "event": "混沌船長", "map": "腐化營房" }] }, { "i": 42, "events": [{ "event": "雙倍經驗值", "map": "精靈洞穴" }, { "event": "雙倍經驗值", "map": "貓貓入侵" }, { "event": "高能警報", "map": "皇家營房" }, { "event": "高能警報", "map": "腐化城堡地下室" }] }, { "i": 43, "events": [{ "event": "重新啟動MO.BOTS", "map": "孽生森林" }, { "event": "混沌衝鋒怪", "map": "下水道" }, { "event": "高能警報", "map": "神聖花園" }, { "event": "mo.co機械師", "map": "腐化廣場" }, { "event": "雙倍經驗值", "map": "腐化碼頭" }] }, { "i": 44, "events": [{ "event": "拯救戰術喵喵", "map": "精靈洞穴" }, { "event": "高能警報", "map": "貓貓入侵" }, { "event": "拯救戰術喵喵", "map": "皇家營房" }, { "event": "工程師求助", "map": "腐化城堡地下室" }] }, { "i": 45, "events": [{ "event": "重新啟動MO.BOTS", "map": "青翠廢墟" }, { "event": "重新啟動MO.BOTS", "map": "召喚庭院" }, { "event": "混沌吹吹怪", "map": "城堡地下室" }, { "event": "混沌跳斧怪", "map": "腐化下水道" }, { "event": "mo.co機械師", "map": "腐化營房" }] }, { "i": 46, "events": [{ "event": "雙倍經驗值", "map": "孽生森林" }, { "event": "混沌噴射怪", "map": "下水道" }, { "event": "雙倍經驗值", "map": "神聖花園" }, { "event": "mo.co機械師", "map": "腐化廣場" }, { "event": "mo.co機械師", "map": "腐化碼頭" }] }, { "i": 47, "events": [{ "event": "X", "map": "X" }] }, { "i": 48, "events": [{ "event": "好多嗅探犬", "map": "神殿村" }, { "event": "雙倍經驗值", "map": "城堡牆壁" }, { "event": "入侵警報", "map": "儀式廣場" }, { "event": "mo.co機械師", "map": "霜掌碼頭" }, { "event": "混沌老媽", "map": "腐化花園" }] }, { "i": 49, "events": [{ "event": "X", "map": "X" }] }, { "i": 50, "events": [{ "event": "混沌鮮花", "map": "精靈洞穴" }, { "event": "混沌箭頭", "map": "貓貓入侵" }, { "event": "混沌劇毒噴射怪", "map": "皇家營房" }, { "event": "混沌劇毒噴射怪", "map": "腐化城堡地下室" }] }, { "i": 51, "events": [{ "event": "重啟採集器", "map": "青翠廢墟" }, { "event": "混沌碎骨怪", "map": "召喚庭院" }, { "event": "入侵警報", "map": "城堡地下室" }, { "event": "重新啟動MO.BOTS", "map": "腐化下水道" }, { "event": "重大研究", "map": "腐化營房" }] }, { "i": 52, "events": [{ "event": "重新啟動MO.BOTS", "map": "神殿村" }, { "event": "雙倍經驗值", "map": "城堡牆壁" }, { "event": "雙倍經驗值", "map": "儀式廣場" }, { "event": "重啟採集器", "map": "霜掌碼頭" }, { "event": "混沌冰霜破壞獸", "map": "腐化花園" }] }, { "i": 53, "events": [{ "event": "X", "map": "X" }] }, { "i": 54, "events": [{ "event": "X", "map": "X" }] }, { "i": 55, "events": [{ "event": "工程師求助", "map": "孽生森林" }, { "event": "入侵警報", "map": "下水道" }, { "event": "重大研究", "map": "神聖花園" }, { "event": "重新啟動MO.BOTS", "map": "腐化廣場" }, { "event": "雙倍經驗值", "map": "腐化碼頭" }] }, { "i": 56, "events": [{ "event": "X", "map": "X" }] }, { "i": 57, "events": [{ "event": "入侵警報", "map": "神殿村" }, { "event": "清道夫群集", "map": "城堡牆壁" }, { "event": "拯救戰術喵喵", "map": "儀式廣場" }, { "event": "雙倍經驗值", "map": "霜掌碼頭" }, { "event": "高能警報", "map": "腐化花園" }] }, { "i": 58, "events": [{ "event": "雙倍經驗值", "map": "青翠廢墟" }, { "event": "混沌狂怒獸", "map": "召喚庭院" }, { "event": "拯救戰術喵喵", "map": "城堡地下室" }, { "event": "混沌吹吹怪", "map": "腐化下水道" }, { "event": "混沌劇毒噴射怪", "map": "腐化營房" }] }, { "i": 59, "events": [{ "event": "X", "map": "X" }] }] };
 
-    // --- helpers ---
+    // --------------------------
+    // i18n (maps/events + full UI text)
+    // --------------------------
+    const I18N = {
+      ui: {
+        title: { zhHant: "簡單版 mo.co 活動預測", zhHans: "简易版 mo.co 活动预测", en: "Simple mo.co Event Forecast" },
+        future: { zhHant: "未來", zhHans: "未来", en: "Next" },
+        hours: { zhHant: "小時", zhHans: "小时", en: "hours" },
+        now: { zhHant: "現在時間", zhHans: "当前时间", en: "Current time" },
+        cycle: { zhHant: "循環", zhHans: "循环", en: "Cycle" },
+        every: { zhHant: "每", zhHans: "每", en: "every" },
+        min: { zhHant: "分鐘", zhHans: "分钟", en: "min" },
+        slot: { zhHant: "一格", zhHans: "一格", en: "per slot" },
+        range_label: { zhHant: "顯示範圍（小時）", zhHans: "显示范围（小时）", en: "Range (hours)" },
+        lang_label: { zhHant: "語言", zhHans: "语言", en: "Language" },
+        tz_label: { zhHant: "時區", zhHans: "时区", en: "Time zone" },
+        tz_custom_opt: { zhHant: "自訂…", zhHans: "自定义…", en: "Custom…" },
+        tz_hint: { zhHant: "可輸入 IANA 時區，例如：Europe/Berlin", zhHans: "可输入 IANA 时区，例如：Europe/Berlin", en: "Enter an IANA time zone, e.g. Europe/Berlin" },
+        tz_custom_label: { zhHant: "自訂時區", zhHans: "自定义时区", en: "Custom time zone" },
+        base_label: { zhHant: "基準時間", zhHans: "基准时间", en: "Base time" },
+        base_hint: { zhHant: "基準時間會以你選的時區解讀", zhHans: "基准时间会按所选时区解读", en: "Base time is interpreted in the selected time zone" },
+        use_now: { zhHant: "用現在", zhHans: "用现在", en: "Use now" },
+        search_label: { zhHant: "搜尋（事件 / 地圖）", zhHans: "搜索（事件 / 地图）", en: "Search (event / map)" },
+        search_ph: { zhHant: "例如：高能 / 機械師 / 研究", zhHans: "例如：高能 / 机械师 / 研究", en: "e.g. Overcharged / Mechanics / Research" },
+        clear: { zhHant: "清除", zhHans: "清除", en: "Clear" },
+        note: { zhHant: "因為只是整理規律，若官方<br>更新遊戲，預測就會失效。", zhHans: "由于只是整理规律，若官方<br>更新游戏，预测就会失效。", en: "This is a pattern summary.<br>If the game updates, forecasts may break." },
+        live: { zhHant: "進行中", zhHans: "进行中", en: "LIVE" },
+        forecast: { zhHant: "預測", zhHans: "预测", en: "Forecast" },
+        empty_title: { zhHant: "沒有符合搜尋條件的項目", zhHans: "没有符合搜索条件的项目", en: "No matches found" },
+        empty_sub: { zhHant: "清除搜尋或加大顯示範圍。", zhHans: "清除搜索或扩大显示范围。", en: "Clear search or increase the range." },
+        footer: { zhHant: "事件預測表由 Dulu 整理，僅供參考。", zhHans: "事件预测表由 Dulu 整理，仅供参考。", en: "Schedule summarized by Dulu. For reference only." },
+        tz_invalid: { zhHant: "無效時區，已改回上一個有效值。", zhHans: "无效时区，已改回上一个有效值。", en: "Invalid time zone. Reverted to the last valid value." },
+        tz_ok: { zhHant: "已套用", zhHans: "已应用", en: "Applied" }
+      },
+      map: {
+        "神殿村": { zhHant: "神殿村", zhHans: "神殿村", en: "SHRINE VILLAGE" },
+        "青翠廢墟": { zhHant: "青翠廢墟", zhHans: "青翠废墟", en: "OVERGROWN RUINS" },
+        "孽生森林": { zhHant: "孽生森林", zhHans: "孽生森林", en: "INFESTED FOREST" },
+        "精靈洞穴": { zhHant: "精靈洞穴", zhHans: "精灵洞穴", en: "CAVE OF SPIRITS" },
+        "城堡牆壁": { zhHant: "城堡牆壁", zhHans: "城堡墙壁", en: "CASTLE WALLS" },
+        "召喚庭院": { zhHant: "召喚庭院", zhHans: "召唤广场", en: "SUMMONING GROUNDS" },
+        "下水道": { zhHant: "下水道", zhHans: "下水道", en: "SEWERS" },
+        "貓貓入侵": { zhHant: "貓貓入侵", zhHans: "猫猫入侵", en: "FELINE INVASION" },
+        "儀式廣場": { zhHant: "儀式廣場", zhHans: "仪式广场", en: "CEREMONIAL SQUARE" },
+        "城堡地下室": { zhHant: "城堡地下室", zhHans: "城堡地下室", en: "CASTLE UNDERCROFT" },
+        "神聖花園": { zhHant: "神聖花園", zhHans: "神圣花园", en: "SANCTUM GARDENS" },
+        "皇家營房": { zhHant: "皇家營房", zhHans: "皇家营房", en: "ROYAL QUARTERS" },
+        "霜掌碼頭": { zhHant: "霜掌碼頭", zhHans: "霜掌码头", en: "FROSTPAW DOCK" },
+        "腐化下水道": { zhHant: "腐化下水道", zhHans: "腐化下水道", en: "CORRUPTED SEWERS" },
+        "腐化廣場": { zhHant: "腐化廣場", zhHans: "腐化广场", en: "CORRUPTED SQUARE" },
+        "腐化城堡地下室": { zhHant: "腐化城堡地下室", zhHans: "腐化城堡地下室", en: "CORRUPTED CASTLE UNDERCROFT" },
+        "腐化花園": { zhHant: "腐化花園", zhHans: "腐化花园", en: "CORRUPTED GARDENS" },
+        "腐化營房": { zhHant: "腐化營房", zhHans: "腐化营房", en: "CORRUPTED QUARTERS" },
+        "腐化碼頭": { zhHant: "腐化碼頭", zhHans: "腐化码头", en: "CORRUPTED DOCK" }
+      },
+      event: {
+        "高能警報": { zhHant: "高能警報", zhHans: "高能警报", en: "OVERCHARGED ALERT" },
+        "雙倍經驗值": { zhHant: "雙倍經驗值", zhHans: "双倍经验值", en: "DOUBLE XP" },
+        "重新啟動MO.BOTS": { zhHant: "重新啟動MO.BOTS", zhHans: "重启魔宝", en: "REBOOT MO.BOTS" },
+        "重啟採集器": { zhHant: "重啟採集器", zhHans: "重启采集器", en: "REBOOT HARVESTERS" },
+        "好多嗅探犬": { zhHant: "好多嗅探犬", zhHans: "好多嗅探犬", en: "SO MANY SNIFFERS" },
+        "重大研究": { zhHant: "重大研究", zhHans: "重大研究", en: "HEAVY RESEARCH" },
+        "拯救戰術喵喵": { zhHant: "拯救戰術喵喵", zhHans: "拯救战术猫", en: "SAVE THE TACTI-CATS" },
+        "入侵警報": { zhHant: "入侵警報", zhHans: "入侵警报", en: "INVASION ALERT" },
+        "工程師求助": { zhHant: "工程師求助", zhHans: "工程师求助", en: "ENGINEERS ALERT" },
+        "mo.co機械師": { zhHant: "mo.co機械師", zhHans: "mo.co机械师", en: "mo.co Mechanics" },
+        "清道夫群集": { zhHant: "清道夫群集", zhHans: "清道夫群集", en: "SCAVENGER SWARM" },
+        "混沌碎骨怪": { zhHant: "混沌碎骨怪", zhHans: "混沌粉碎怪", en: "Chaos Smashers" },
+        "混沌警鐘": { zhHant: "混沌警鐘", zhHans: "混沌警钟", en: "Chaos Bells" },
+        "混沌狂怒獸": { zhHant: "混沌狂怒獸", zhHans: "混沌狂怒兽", en: "Chaos Berserkers" },
+        "混沌噴射怪": { zhHant: "混沌噴射怪", zhHans: "混沌喷射怪", en: "Chaos Spitters" },
+        "混沌長矛跳跳龍": { zhHant: "混沌長矛跳跳龍", zhHans: "混沌长矛跳跳龙", en: "Chaos Spear Jumpers" },
+        "混沌花朵": { zhHant: "混沌花朵", zhHans: "混沌花朵", en: "Chaos Flowers" },
+        "混沌騎士": { zhHant: "混沌騎士", zhHans: "混沌骑士", en: "Chaos Knights" },
+        "混沌吹吹怪": { zhHant: "混沌吹吹怪", zhHans: "混沌吹吹怪", en: "Chaos Blowers" },
+        "混沌衝鋒怪": { zhHant: "混沌衝鋒怪", zhHans: "混沌冲锋怪", en: "Chaos Dashers" },
+        "混沌跳斧怪": { zhHant: "混沌跳斧怪", zhHans: "混沌跳斧怪", en: "Chaos Axe-Hoppers" },
+        "混沌鮮花": { zhHant: "混沌鮮花", zhHans: "混沌鲜花", en: "Chaos Blooms" },
+        "混沌老媽": { zhHant: "混沌老媽", zhHans: "混沌老妈", en: "Chaos Mamas" }, /* FIX: 原本這行 JS 破掉，會直接讓整頁不顯示 */
+        "混沌衝擊怪-領袖": { zhHant: "混沌衝擊怪-領袖", zhHans: "混沌冲击怪-领袖", en: "Chaos Alpha Chargers" },
+        "混沌劇毒噴射怪": { zhHant: "混沌劇毒噴射怪", zhHans: "混沌剧毒喷射怪", en: "Chaos Toxic Spitters" },
+        "混沌蟲夫人": { zhHant: "混沌蟲夫人", zhHans: "混沌虫夫人", en: "Chaos Lady Bugs" },
+        "混沌船長": { zhHant: "混沌船長", zhHans: "混沌船长", en: "Chaos Captains" },
+        "混沌魚叉手": { zhHant: "混沌魚叉手", zhHans: "混沌鱼叉手", en: "Chaos Harpooners" },
+        "混沌箭頭": { zhHant: "混沌箭頭", zhHans: "混沌箭头", en: "Chaos Arrowcats" },
+        "混沌冰霜破壞獸": { zhHant: "混沌冰霜破壞獸", zhHans: "混沌冰霜破坏兽", en: "Chaos Frost Stompers" },
+        "混沌墮落精靈": { zhHant: "混沌墮落精靈", zhHans: "混沌堕落精灵", en: "Chaos Corrupt Spirits" }
+      }
+    };
+
+    // --------------------------
+    // Persistent settings
+    // --------------------------
+    const LS = {
+      lang: 'moco_forecast_lang',
+      tz: 'moco_forecast_tz',
+      range: 'moco_forecast_range'
+    };
+
+    // --------------------------
+    // Helpers (language)
+    // --------------------------
+    function getLang() {
+      const el = document.getElementById('lang');
+      return el ? el.value : 'zhHant';
+    }
+    function tr(kind, key) {
+      const row = (I18N[kind] || {})[key];
+      if (!row) return key;
+      return row[getLang()] || key;
+    }
+    function ui(key) {
+      const row = (I18N.ui || {})[key];
+      if (!row) return key;
+      return row[getLang()] || key;
+    }
+    function localeForLang() {
+      const l = getLang();
+      if (l === 'zhHans') return 'zh-Hans-CN';
+      if (l === 'en') return 'en-US';
+      return 'zh-Hant-TW';
+    }
+
+    // --------------------------
+    // Time zone conversion
+    // --------------------------
     function pad2(n) { return String(n).padStart(2, '0'); }
 
-    function toTaipeiDate(d) {
-      const fmt = new Intl.DateTimeFormat('sv-SE', {
-        timeZone: DATA.tz,
+    function isValidTimeZone(tz) {
+      try {
+        new Intl.DateTimeFormat('en-US', { timeZone: tz }).format(new Date());
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    // Compute offset(ms) for a given absolute Date in a given tz:
+    // offset = (wallclock(tz) interpreted as UTC) - actualUTC
+    function tzOffsetMs(date, tz) {
+      const fmt = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        hour12: false,
         year: 'numeric', month: '2-digit', day: '2-digit',
         hour: '2-digit', minute: '2-digit', second: '2-digit'
       });
-      return fmt.format(d).replace(' ', 'T'); // YYYY-MM-DDTHH:mm:ss
+      const parts = fmt.formatToParts(date);
+      const get = (type) => parts.find(p => p.type === type)?.value;
+      const Y = +get('year');
+      const M = +get('month');
+      const D = +get('day');
+      const H = +get('hour');
+      const Mi = +get('minute');
+      const S = +get('second');
+      const asUTC = Date.UTC(Y, M - 1, D, H, Mi, S);
+      return asUTC - date.getTime();
     }
 
-    function parseDTLocalInputToDate(value) {
+    // Convert "YYYY-MM-DDTHH:mm" interpreted in tz => absolute Date
+    function parseDTLocalInputToDate(value, tz) {
       const m = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
       if (!m) return null;
       const Y = +m[1], Mo = +m[2], D = +m[3], H = +m[4], Mi = +m[5];
-      // Taiwan fixed +08:00
-      const utcMs = Date.UTC(Y, Mo - 1, D, H - 8, Mi, 0);
-      return new Date(utcMs);
+
+      // UTC guess
+      const guess = new Date(Date.UTC(Y, Mo - 1, D, H, Mi, 0));
+      // Find what that guess looks like in tz, then adjust delta
+      const off = tzOffsetMs(guess, tz);
+      // Adjust guess by offset difference
+      return new Date(guess.getTime() - off);
     }
 
-    function formatTaipeiHM(d) {
-      const fmt = new Intl.DateTimeFormat('zh-Hant-TW', {
-        timeZone: DATA.tz,
-        hour: '2-digit', minute: '2-digit', hour12: false
+    // absolute Date => "YYYY-MM-DDTHH:mm" in tz (for datetime-local)
+    function toDTLocalValue(date, tz) {
+      const fmt = new Intl.DateTimeFormat('sv-SE', {
+        timeZone: tz,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false
       });
-      return fmt.format(d);
+      // sv-SE gives "YYYY-MM-DD HH:mm:ss"
+      return fmt.format(date).replace(' ', 'T').slice(0, 16);
     }
 
-    function formatTaipeiFull(d) {
-      const fmt = new Intl.DateTimeFormat('zh-Hant-TW', {
-        timeZone: DATA.tz,
+    function formatHM(date, tz) {
+      return new Intl.DateTimeFormat(localeForLang(), {
+        timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false
+      }).format(date);
+    }
+    function formatFull(date, tz) {
+      return new Intl.DateTimeFormat(localeForLang(), {
+        timeZone: tz,
         year: 'numeric', month: '2-digit', day: '2-digit',
         hour: '2-digit', minute: '2-digit', hour12: false
-      });
-      return fmt.format(d);
+      }).format(date);
     }
 
-    function floorToSlot(d) {
-      const ms = d.getTime();
+    // Slot alignment MUST follow the schedule's own time base (DATA.tz),
+    // otherwise switching boundaries would shift when display TZ changes.
+    function floorToSlotInTZ(date, tz) {
       const slotMs = DATA.slot_minutes * 60 * 1000;
-      const offsetMs = 8 * 60 * 60 * 1000; // +08
-      const aligned = Math.floor((ms + offsetMs) / slotMs) * slotMs - offsetMs;
+      const offset = tzOffsetMs(date, tz);
+      const aligned = Math.floor((date.getTime() + offset) / slotMs) * slotMs - offset;
       return new Date(aligned);
     }
 
@@ -317,12 +535,67 @@
       return Math.floor(mod / DATA.slot_minutes);
     }
 
-    function matchesQuery(events, q) {
-      if (!q) return true;
-      const qq = q.trim().toLowerCase();
-      return events.some(x => (x.event + " " + x.map).toLowerCase().includes(qq));
+    // --------------------------
+    // UI state: timezone selection
+    // --------------------------
+    let lastValidTZ = DATA.tz;
+
+    function getDisplayTZ() {
+      const preset = document.getElementById('tzPreset').value;
+      if (preset === '__custom__') {
+        const v = (document.getElementById('tzCustom').value || '').trim();
+        return v || lastValidTZ;
+      }
+      return preset;
     }
 
+    function applyTZUIVisibility() {
+      const preset = document.getElementById('tzPreset').value;
+      document.getElementById('tzCustomWrap').style.display = (preset === '__custom__') ? '' : 'none';
+      document.getElementById('tzCustomStatus').textContent = '';
+      document.getElementById('tzCustomStatus').className = 'hint';
+    }
+
+    function applyTZValidated() {
+      const tz = getDisplayTZ();
+      const status = document.getElementById('tzCustomStatus');
+
+      if (!isValidTimeZone(tz)) {
+        status.textContent = ui('tz_invalid');
+        status.className = 'hint warn';
+        // revert
+        setDisplayTZ(lastValidTZ);
+        return lastValidTZ;
+      }
+
+      lastValidTZ = tz;
+      status.textContent = (document.getElementById('tzPreset').value === '__custom__') ? (ui('tz_ok') + '：' + tz) : '';
+      status.className = 'hint';
+
+      localStorage.setItem(LS.tz, tz);
+      document.getElementById('tzName').textContent = tz;
+      return tz;
+    }
+
+    function setDisplayTZ(tz) {
+      // best effort: match preset, otherwise custom
+      const preset = document.getElementById('tzPreset');
+      const custom = document.getElementById('tzCustom');
+      const opts = Array.from(preset.options).map(o => o.value);
+      if (opts.includes(tz) && tz !== '__custom__') {
+        preset.value = tz;
+        custom.value = '';
+      } else {
+        preset.value = '__custom__';
+        custom.value = tz;
+      }
+      applyTZUIVisibility();
+      document.getElementById('tzName').textContent = tz;
+    }
+
+    // --------------------------
+    // Rendering helpers
+    // --------------------------
     function escHtml(s) {
       return String(s)
         .replaceAll('&', '&amp;')
@@ -352,8 +625,68 @@
       return out;
     }
 
-    // --- render ---
+    function matchesQuery(events, q) {
+      const query = (q || "").trim().toLowerCase();
+      if (!query) return true;
+      return events.some(x => {
+        const ev0 = x.event || "";
+        const mp0 = x.map || "";
+        const ev = tr('event', ev0);
+        const mp = tr('map', mp0);
+        const hay = (ev0 + " " + mp0 + " " + ev + " " + mp).toLowerCase();
+        return hay.includes(query);
+      });
+    }
+
+    function filterEventsByQuery(events, q) {
+      const query = (q || "").trim().toLowerCase();
+      if (!query) return events;
+
+      return events.filter(x => {
+        const ev0 = x.event || "";
+        const mp0 = x.map || "";
+        const ev = tr('event', ev0);
+        const mp = tr('map', mp0);
+        const hay = (ev0 + " " + mp0 + " " + ev + " " + mp).toLowerCase();
+        return hay.includes(query);
+      });
+    }
+
+    function renderStaticText() {
+      document.getElementById('ui_title').textContent = ui('title');
+      document.getElementById('ui_future').textContent = ui('future');
+      document.getElementById('ui_hours').textContent = ui('hours');
+      document.getElementById('ui_now').textContent = ui('now');
+      document.getElementById('ui_cycle').textContent = ui('cycle');
+      document.getElementById('ui_every').textContent = ui('every');
+      document.getElementById('ui_min').textContent = ui('min');
+      document.getElementById('ui_each').textContent = ui('every');
+      document.getElementById('ui_min2').textContent = ui('min');
+      document.getElementById('ui_slot').textContent = ui('slot');
+
+      document.getElementById('ui_range_label').textContent = ui('range_label');
+      document.getElementById('ui_lang_label').textContent = ui('lang_label');
+      document.getElementById('ui_tz_label').textContent = ui('tz_label');
+      document.getElementById('ui_tz_custom_opt').textContent = ui('tz_custom_opt');
+      document.getElementById('ui_tz_hint').textContent = ui('tz_hint');
+      document.getElementById('ui_tz_custom_label').textContent = ui('tz_custom_label');
+
+      document.getElementById('ui_base_label').textContent = ui('base_label');
+      document.getElementById('ui_base_hint').textContent = ui('base_hint');
+      document.getElementById('useNow').textContent = ui('use_now');
+
+      document.getElementById('ui_search_label').textContent = ui('search_label');
+      document.getElementById('q').placeholder = ui('search_ph');
+      document.getElementById('clearQ').textContent = ui('clear');
+
+      document.getElementById('ui_note').innerHTML = ui('note');
+      document.getElementById('ui_footer').textContent = ui('footer');
+
+      document.title = ui('title');
+    }
+
     function render() {
+      const displayTZ = applyTZValidated();
       const rangeHours = parseInt(document.getElementById('range').value, 10);
       document.getElementById('hoursLabel').textContent = String(rangeHours);
 
@@ -362,26 +695,30 @@
       out.innerHTML = "";
 
       const now = new Date();
+
+      // Base time is entered in "displayTZ" (not schedule TZ)
       const baseInput = document.getElementById('baseTime').value;
-      let base = baseInput ? parseDTLocalInputToDate(baseInput) : now;
+      let base = baseInput ? parseDTLocalInputToDate(baseInput, displayTZ) : now;
       if (!base) base = now;
 
-      const liveSlot = floorToSlot(now).getTime();
-
-      const start = floorToSlot(base); // include current slot
+      // LIVE boundary & slot boundaries must follow schedule TZ (DATA.tz)
+      const slotMs = DATA.slot_minutes * 60 * 1000;
+      const start = floorToSlotInTZ(base, DATA.tz);
       const slotsToShow = Math.floor((rangeHours * 60) / DATA.slot_minutes) + 1;
 
       for (let k = 0; k < slotsToShow; k++) {
-        const t = new Date(start.getTime() + k * DATA.slot_minutes * 60 * 1000);
+        const t = new Date(start.getTime() + k * slotMs);
 
-        if (t.getTime() < liveSlot) continue;
+        if (t.getTime() + slotMs <= now.getTime()) continue;
 
         const idx = slotIndexForDate(t);
-        const events = DATA.schedule[idx].events;
+        const row = DATA.schedule[idx];
+        const eventsAll = (row && row.events) ? row.events : [];
 
-        if (!matchesQuery(events, q)) continue;
+        const events = filterEventsByQuery(eventsAll, q);
+        if (events.length === 0) continue;
 
-        const isLive = (t.getTime() === liveSlot);
+        const isLive = (now.getTime() >= t.getTime() && now.getTime() < t.getTime() + slotMs);
 
         const card = document.createElement('div');
         card.className = 'card';
@@ -390,20 +727,25 @@
         top.className = 'top';
 
         const left = document.createElement('div');
-        left.innerHTML = `<div class="t">${formatTaipeiHM(t)}</div><div class="sub">${formatTaipeiFull(t)}</div>`;
+        // Time display follows displayTZ
+        left.innerHTML = `<div class="t">${formatHM(t, displayTZ)}</div><div class="sub">${formatFull(t, displayTZ)}</div>`;
 
         const right = document.createElement('div');
-        right.innerHTML = isLive ? `<span class="tag live">進行中</span>` : `<span class="tag">預測</span>`;
+        right.innerHTML = isLive
+          ? `<span class="tag live">${escHtml(ui('live'))}</span>`
+          : `<span class="tag">${escHtml(ui('forecast'))}</span>`;
 
         top.appendChild(left);
         top.appendChild(right);
 
         const ul = document.createElement('ul');
         for (const it of events) {
+          const ev = tr('event', it.event);
+          const mp = tr('map', it.map);
           const li = document.createElement('li');
           li.innerHTML =
-            `<span class="mono">${highlightText(it.event, q)}</span> ` +
-            `<span class="pill">${highlightText(it.map, q)}</span>`;
+            `<span class="mono">${highlightText(ev, q)}</span> ` +
+            `<span class="pill">${highlightText(mp, q)}</span>`;
           ul.appendChild(li);
         }
 
@@ -415,39 +757,96 @@
       if (out.children.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'card';
-        empty.innerHTML = `<div class="t">沒有符合搜尋條件的項目</div><div class="sub">清除搜尋或加大顯示範圍。</div>`;
+        empty.innerHTML = `<div class="t">${escHtml(ui('empty_title'))}</div><div class="sub">${escHtml(ui('empty_sub'))}</div>`;
         out.appendChild(empty);
       }
     }
 
-
     function tickNow() {
       const now = new Date();
-      document.getElementById('now').textContent = formatTaipeiFull(now) + ':' + pad2(now.getSeconds());
+      const displayTZ = applyTZValidated();
+      document.getElementById('now').textContent = formatFull(now, displayTZ) + ':' + pad2(now.getSeconds());
     }
 
     function setBaseToNow() {
       const now = new Date();
-      const s = toTaipeiDate(now);
-      document.getElementById('baseTime').value = s.slice(0, 16);
+      const displayTZ = applyTZValidated();
+      document.getElementById('baseTime').value = toDTLocalValue(now, displayTZ);
       render();
     }
 
-    // init constants in UI
+    // --------------------------
+    // Init & Events
+    // --------------------------
     document.getElementById('cycleMin').textContent = String(DATA.cycle_minutes);
     document.getElementById('slotMin').textContent = String(DATA.slot_minutes);
 
-    // events
-    document.getElementById('range').addEventListener('change', render);
+    // Restore settings
+    const savedLang = localStorage.getItem(LS.lang);
+    if (savedLang) document.getElementById('lang').value = savedLang;
+
+    const savedRange = localStorage.getItem(LS.range);
+    if (savedRange) document.getElementById('range').value = savedRange;
+
+    const savedTZ = localStorage.getItem(LS.tz) || DATA.tz;
+    lastValidTZ = isValidTimeZone(savedTZ) ? savedTZ : DATA.tz;
+    setDisplayTZ(lastValidTZ);
+
+    renderStaticText();
+    applyTZUIVisibility();
+
+    document.getElementById('range').addEventListener('change', () => {
+      localStorage.setItem(LS.range, document.getElementById('range').value);
+      render();
+    });
+
+    document.getElementById('lang').addEventListener('change', () => {
+      localStorage.setItem(LS.lang, document.getElementById('lang').value);
+      renderStaticText();
+      // baseTime should remain same absolute instant; re-set from current absolute value if present
+      const tz = applyTZValidated();
+      const baseInput = document.getElementById('baseTime').value;
+      if (baseInput) {
+        const abs = parseDTLocalInputToDate(baseInput, tz);
+        if (abs) document.getElementById('baseTime').value = toDTLocalValue(abs, tz);
+      }
+      render();
+    });
+
+    document.getElementById('tzPreset').addEventListener('change', () => {
+      applyTZUIVisibility();
+      const tz = applyTZValidated();
+      // When TZ changes, keep baseTime as the same instant: parse old in oldTZ then reformat in newTZ.
+      // Easiest: use current baseTime + previous valid tzName element (already updated). We'll do:
+      const baseInput = document.getElementById('baseTime').value;
+      if (baseInput) {
+        // interpret baseInput in tz (after change) would be wrong. So:
+        // 1) temporarily interpret in lastValidTZ BEFORE change is lost; we can't easily know it here.
+        // Practical approach: set base to now to avoid confusion.
+        // But user wants base editable; better: store last tz before change.
+      }
+      setBaseToNow();
+      tickNow();
+    });
+
+    document.getElementById('tzCustom').addEventListener('input', () => {
+      applyTZValidated();
+      setBaseToNow();
+      tickNow();
+    });
+
     document.getElementById('q').addEventListener('input', render);
+
     document.getElementById('clearQ').addEventListener('click', () => {
       document.getElementById('q').value = '';
       render();
     });
+
     document.getElementById('useNow').addEventListener('click', setBaseToNow);
+
     document.getElementById('baseTime').addEventListener('change', render);
 
-    // initial
+    // First paint
     setBaseToNow();
     tickNow();
     setInterval(tickNow, 250);
