@@ -353,8 +353,9 @@
         empty_title: { zhHant: "沒有符合搜尋條件的項目", zhHans: "没有符合搜索条件的项目", en: "No matches found" },
         empty_sub: { zhHant: "清除搜尋或加大顯示範圍。", zhHans: "清除搜索或扩大显示范围。", en: "Clear search or increase the range." },
         footer: { zhHant: "事件預測表由 Dulu 整理，僅供參考。", zhHans: "事件预测表由 Dulu 整理，仅供参考。", en: "Schedule summarized by Dulu. For reference only." },
-        tz_invalid: { zhHant: "無效時區，已改回上一個有效值。", zhHans: "无效时区，已改回上一个有效值。", en: "Invalid time zone. Reverted to the last valid value." },
-        tz_ok: { zhHant: "已套用", zhHans: "已应用", en: "Applied" }
+        tz_invalid: { zhHant: "無效時區：已回復到上一個有效值。", zhHans: "无效时区：已恢复到上一个有效值。", en: "Invalid time zone: reverted to the last valid value." },
+        tz_typing_ok: { zhHant: "有效時區（離開輸入框後套用）", zhHans: "有效时区（离开输入框后应用）", en: "Valid (will apply on blur)" },
+        tz_typing_bad: { zhHant: "無效時區（離開輸入框會回復）", zhHans: "无效时区（离开输入框会恢复）", en: "Invalid (will revert on blur)" }
       },
       map: {
         "神殿村": { zhHant: "神殿村", zhHans: "神殿村", en: "SHRINE VILLAGE" },
@@ -400,7 +401,7 @@
         "混沌衝鋒怪": { zhHant: "混沌衝鋒怪", zhHans: "混沌冲锋怪", en: "Chaos Dashers" },
         "混沌跳斧怪": { zhHant: "混沌跳斧怪", zhHans: "混沌跳斧怪", en: "Chaos Axe-Hoppers" },
         "混沌鮮花": { zhHant: "混沌鮮花", zhHans: "混沌鲜花", en: "Chaos Blooms" },
-        "混沌老媽": { zhHant: "混沌老媽", zhHans: "混沌老妈", en: "Chaos Mamas" }, /* FIX: 原本這行 JS 破掉，會直接讓整頁不顯示 */
+        "混沌老媽": { zhHant: "混沌老媽", zhHans: "混沌老妈", en: "Chaos Mamas" },
         "混沌衝擊怪-領袖": { zhHant: "混沌衝擊怪-領袖", zhHans: "混沌冲击怪-领袖", en: "Chaos Alpha Chargers" },
         "混沌劇毒噴射怪": { zhHant: "混沌劇毒噴射怪", zhHans: "混沌剧毒喷射怪", en: "Chaos Toxic Spitters" },
         "混沌蟲夫人": { zhHant: "混沌蟲夫人", zhHans: "混沌虫夫人", en: "Chaos Lady Bugs" },
@@ -459,7 +460,6 @@
       }
     }
 
-    // Compute offset(ms) for a given absolute Date in a given tz:
     // offset = (wallclock(tz) interpreted as UTC) - actualUTC
     function tzOffsetMs(date, tz) {
       const fmt = new Intl.DateTimeFormat('en-US', {
@@ -480,17 +480,14 @@
       return asUTC - date.getTime();
     }
 
-    // Convert "YYYY-MM-DDTHH:mm" interpreted in tz => absolute Date
+    // "YYYY-MM-DDTHH:mm" interpreted in tz => absolute Date
     function parseDTLocalInputToDate(value, tz) {
       const m = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
       if (!m) return null;
       const Y = +m[1], Mo = +m[2], D = +m[3], H = +m[4], Mi = +m[5];
 
-      // UTC guess
       const guess = new Date(Date.UTC(Y, Mo - 1, D, H, Mi, 0));
-      // Find what that guess looks like in tz, then adjust delta
       const off = tzOffsetMs(guess, tz);
-      // Adjust guess by offset difference
       return new Date(guess.getTime() - off);
     }
 
@@ -502,7 +499,6 @@
         hour: '2-digit', minute: '2-digit', second: '2-digit',
         hour12: false
       });
-      // sv-SE gives "YYYY-MM-DD HH:mm:ss"
       return fmt.format(date).replace(' ', 'T').slice(0, 16);
     }
 
@@ -519,8 +515,7 @@
       }).format(date);
     }
 
-    // Slot alignment MUST follow the schedule's own time base (DATA.tz),
-    // otherwise switching boundaries would shift when display TZ changes.
+    // Slot alignment must follow schedule TZ (DATA.tz)
     function floorToSlotInTZ(date, tz) {
       const slotMs = DATA.slot_minutes * 60 * 1000;
       const offset = tzOffsetMs(date, tz);
@@ -536,15 +531,46 @@
     }
 
     // --------------------------
+    // Time zone labels (localized text for options)
+    // --------------------------
+    const TZ_LABELS = {
+      "Asia/Taipei": { zhHant: "台北", zhHans: "台北", en: "Taipei" },
+      "UTC": { zhHant: "世界標準時間", zhHans: "世界标准时间", en: "UTC" },
+      "Asia/Tokyo": { zhHant: "東京", zhHans: "东京", en: "Tokyo" },
+      "Asia/Shanghai": { zhHant: "上海", zhHans: "上海", en: "Shanghai" },
+      "Asia/Singapore": { zhHant: "新加坡", zhHans: "新加坡", en: "Singapore" },
+      "America/Los_Angeles": { zhHant: "洛杉磯", zhHans: "洛杉矶", en: "Los Angeles" },
+      "America/New_York": { zhHant: "紐約", zhHans: "纽约", en: "New York" },
+      "Europe/London": { zhHant: "倫敦", zhHans: "伦敦", en: "London" },
+      "Europe/Paris": { zhHant: "巴黎", zhHans: "巴黎", en: "Paris" },
+      "Australia/Sydney": { zhHant: "雪梨", zhHans: "悉尼", en: "Sydney" }
+    };
+
+    function tzOptionText(tz) {
+      const row = TZ_LABELS[tz];
+      const name = row ? (row[getLang()] || row.en) : tz;
+      return `${name} (${tz})`;
+    }
+
+    function renderTZOptionLabels() {
+      const preset = document.getElementById('tzPreset');
+      for (const opt of preset.options) {
+        if (opt.value === '__custom__') continue;
+        opt.textContent = tzOptionText(opt.value);
+      }
+      document.getElementById('ui_tz_custom_opt').textContent = ui('tz_custom_opt');
+    }
+
+    // --------------------------
     // UI state: timezone selection
     // --------------------------
     let lastValidTZ = DATA.tz;
+    let currentTZ = DATA.tz; // committed/active tz for display + baseTime parsing
 
-    function getDisplayTZ() {
+    function getDisplayTZRaw() {
       const preset = document.getElementById('tzPreset').value;
       if (preset === '__custom__') {
-        const v = (document.getElementById('tzCustom').value || '').trim();
-        return v || lastValidTZ;
+        return (document.getElementById('tzCustom').value || '').trim(); // can be empty while typing
       }
       return preset;
     }
@@ -552,36 +578,16 @@
     function applyTZUIVisibility() {
       const preset = document.getElementById('tzPreset').value;
       document.getElementById('tzCustomWrap').style.display = (preset === '__custom__') ? '' : 'none';
+      // do not wipe user input; only clear status text
       document.getElementById('tzCustomStatus').textContent = '';
       document.getElementById('tzCustomStatus').className = 'hint';
     }
 
-    function applyTZValidated() {
-      const tz = getDisplayTZ();
-      const status = document.getElementById('tzCustomStatus');
-
-      if (!isValidTimeZone(tz)) {
-        status.textContent = ui('tz_invalid');
-        status.className = 'hint warn';
-        // revert
-        setDisplayTZ(lastValidTZ);
-        return lastValidTZ;
-      }
-
-      lastValidTZ = tz;
-      status.textContent = (document.getElementById('tzPreset').value === '__custom__') ? (ui('tz_ok') + '：' + tz) : '';
-      status.className = 'hint';
-
-      localStorage.setItem(LS.tz, tz);
-      document.getElementById('tzName').textContent = tz;
-      return tz;
-    }
-
     function setDisplayTZ(tz) {
-      // best effort: match preset, otherwise custom
       const preset = document.getElementById('tzPreset');
       const custom = document.getElementById('tzCustom');
       const opts = Array.from(preset.options).map(o => o.value);
+
       if (opts.includes(tz) && tz !== '__custom__') {
         preset.value = tz;
         custom.value = '';
@@ -589,8 +595,71 @@
         preset.value = '__custom__';
         custom.value = tz;
       }
+
       applyTZUIVisibility();
       document.getElementById('tzName').textContent = tz;
+    }
+
+    function preserveBaseInstant(prevTZ, newTZ) {
+      const baseEl = document.getElementById('baseTime');
+      const v = baseEl.value;
+      if (!v) return;
+      const abs = parseDTLocalInputToDate(v, prevTZ);
+      if (!abs) return;
+      baseEl.value = toDTLocalValue(abs, newTZ);
+    }
+
+    // Validate without forcing reverts while typing.
+    // commit=false: returns tz if valid, otherwise null (no revert)
+    // commit=true: commits if valid, otherwise reverts to lastValidTZ
+    function applyTZValidated({ commit = false } = {}) {
+      const tz = getDisplayTZRaw();
+      const status = document.getElementById('tzCustomStatus');
+
+      // If custom selected but empty, treat as invalid for commit, but just "null" for non-commit.
+      const ok = tz && isValidTimeZone(tz);
+
+      if (!ok) {
+        if (document.getElementById('tzPreset').value === '__custom__') {
+          status.textContent = ui('tz_typing_bad');
+          status.className = 'hint warn';
+        } else {
+          status.textContent = '';
+          status.className = 'hint';
+        }
+
+        if (!commit) return null;
+
+        // commit: revert UI to last valid
+        status.textContent = ui('tz_invalid');
+        status.className = 'hint warn';
+        setDisplayTZ(lastValidTZ);
+        document.getElementById('tzName').textContent = lastValidTZ;
+        return lastValidTZ;
+      }
+
+      // valid
+      if (document.getElementById('tzPreset').value === '__custom__') {
+        status.textContent = ui('tz_typing_ok');
+        status.className = 'hint';
+      } else {
+        status.textContent = '';
+        status.className = 'hint';
+      }
+
+      if (!commit) return tz;
+
+      // commit & store
+      const prevTZ = currentTZ;
+      lastValidTZ = tz;
+      currentTZ = tz;
+      localStorage.setItem(LS.tz, tz);
+      document.getElementById('tzName').textContent = tz;
+
+      // keep baseTime representing same instant
+      preserveBaseInstant(prevTZ, tz);
+
+      return tz;
     }
 
     // --------------------------
@@ -625,19 +694,6 @@
       return out;
     }
 
-    function matchesQuery(events, q) {
-      const query = (q || "").trim().toLowerCase();
-      if (!query) return true;
-      return events.some(x => {
-        const ev0 = x.event || "";
-        const mp0 = x.map || "";
-        const ev = tr('event', ev0);
-        const mp = tr('map', mp0);
-        const hay = (ev0 + " " + mp0 + " " + ev + " " + mp).toLowerCase();
-        return hay.includes(query);
-      });
-    }
-
     function filterEventsByQuery(events, q) {
       const query = (q || "").trim().toLowerCase();
       if (!query) return events;
@@ -667,7 +723,6 @@
       document.getElementById('ui_range_label').textContent = ui('range_label');
       document.getElementById('ui_lang_label').textContent = ui('lang_label');
       document.getElementById('ui_tz_label').textContent = ui('tz_label');
-      document.getElementById('ui_tz_custom_opt').textContent = ui('tz_custom_opt');
       document.getElementById('ui_tz_hint').textContent = ui('tz_hint');
       document.getElementById('ui_tz_custom_label').textContent = ui('tz_custom_label');
 
@@ -686,7 +741,6 @@
     }
 
     function render() {
-      const displayTZ = applyTZValidated();
       const rangeHours = parseInt(document.getElementById('range').value, 10);
       document.getElementById('hoursLabel').textContent = String(rangeHours);
 
@@ -696,12 +750,12 @@
 
       const now = new Date();
 
-      // Base time is entered in "displayTZ" (not schedule TZ)
+      // Base time is entered in currentTZ
       const baseInput = document.getElementById('baseTime').value;
-      let base = baseInput ? parseDTLocalInputToDate(baseInput, displayTZ) : now;
+      let base = baseInput ? parseDTLocalInputToDate(baseInput, currentTZ) : now;
       if (!base) base = now;
 
-      // LIVE boundary & slot boundaries must follow schedule TZ (DATA.tz)
+      // LIVE boundary & slot boundaries follow schedule TZ (DATA.tz)
       const slotMs = DATA.slot_minutes * 60 * 1000;
       const start = floorToSlotInTZ(base, DATA.tz);
       const slotsToShow = Math.floor((rangeHours * 60) / DATA.slot_minutes) + 1;
@@ -709,6 +763,7 @@
       for (let k = 0; k < slotsToShow; k++) {
         const t = new Date(start.getTime() + k * slotMs);
 
+        // skip slots that are fully in the past
         if (t.getTime() + slotMs <= now.getTime()) continue;
 
         const idx = slotIndexForDate(t);
@@ -718,6 +773,7 @@
         const events = filterEventsByQuery(eventsAll, q);
         if (events.length === 0) continue;
 
+        // LIVE if now is within [t, t+slot)
         const isLive = (now.getTime() >= t.getTime() && now.getTime() < t.getTime() + slotMs);
 
         const card = document.createElement('div');
@@ -727,8 +783,7 @@
         top.className = 'top';
 
         const left = document.createElement('div');
-        // Time display follows displayTZ
-        left.innerHTML = `<div class="t">${formatHM(t, displayTZ)}</div><div class="sub">${formatFull(t, displayTZ)}</div>`;
+        left.innerHTML = `<div class="t">${formatHM(t, currentTZ)}</div><div class="sub">${formatFull(t, currentTZ)}</div>`;
 
         const right = document.createElement('div');
         right.innerHTML = isLive
@@ -764,14 +819,13 @@
 
     function tickNow() {
       const now = new Date();
-      const displayTZ = applyTZValidated();
-      document.getElementById('now').textContent = formatFull(now, displayTZ) + ':' + pad2(now.getSeconds());
+      document.getElementById('tzName').textContent = currentTZ;
+      document.getElementById('now').textContent = formatFull(now, currentTZ) + ':' + pad2(now.getSeconds());
     }
 
     function setBaseToNow() {
       const now = new Date();
-      const displayTZ = applyTZValidated();
-      document.getElementById('baseTime').value = toDTLocalValue(now, displayTZ);
+      document.getElementById('baseTime').value = toDTLocalValue(now, currentTZ);
       render();
     }
 
@@ -790,9 +844,11 @@
 
     const savedTZ = localStorage.getItem(LS.tz) || DATA.tz;
     lastValidTZ = isValidTimeZone(savedTZ) ? savedTZ : DATA.tz;
-    setDisplayTZ(lastValidTZ);
+    currentTZ = lastValidTZ;
+    setDisplayTZ(currentTZ);
 
     renderStaticText();
+    renderTZOptionLabels();
     applyTZUIVisibility();
 
     document.getElementById('range').addEventListener('change', () => {
@@ -803,36 +859,54 @@
     document.getElementById('lang').addEventListener('change', () => {
       localStorage.setItem(LS.lang, document.getElementById('lang').value);
       renderStaticText();
-      // baseTime should remain same absolute instant; re-set from current absolute value if present
-      const tz = applyTZValidated();
-      const baseInput = document.getElementById('baseTime').value;
-      if (baseInput) {
-        const abs = parseDTLocalInputToDate(baseInput, tz);
-        if (abs) document.getElementById('baseTime').value = toDTLocalValue(abs, tz);
-      }
+      renderTZOptionLabels();
       render();
+      tickNow();
     });
 
+    // Preset TZ: commit immediately except "__custom__"
     document.getElementById('tzPreset').addEventListener('change', () => {
       applyTZUIVisibility();
-      const tz = applyTZValidated();
-      // When TZ changes, keep baseTime as the same instant: parse old in oldTZ then reformat in newTZ.
-      // Easiest: use current baseTime + previous valid tzName element (already updated). We'll do:
-      const baseInput = document.getElementById('baseTime').value;
-      if (baseInput) {
-        // interpret baseInput in tz (after change) would be wrong. So:
-        // 1) temporarily interpret in lastValidTZ BEFORE change is lost; we can't easily know it here.
-        // Practical approach: set base to now to avoid confusion.
-        // But user wants base editable; better: store last tz before change.
+      if (document.getElementById('tzPreset').value === '__custom__') {
+        // do not commit; let user type then blur to commit
+        applyTZValidated({ commit: false });
+        return;
       }
-      setBaseToNow();
+
+      // commit to selected preset
+      const prev = currentTZ;
+      const candidate = getDisplayTZRaw();
+      if (!isValidTimeZone(candidate)) {
+        // should not happen for preset list, but keep safe
+        setDisplayTZ(lastValidTZ);
+        return;
+      }
+      lastValidTZ = candidate;
+      currentTZ = candidate;
+      localStorage.setItem(LS.tz, candidate);
+      document.getElementById('tzName').textContent = candidate;
+      preserveBaseInstant(prev, candidate);
+
+      render();
       tickNow();
     });
 
-    document.getElementById('tzCustom').addEventListener('input', () => {
-      applyTZValidated();
-      setBaseToNow();
-      tickNow();
+    // Custom TZ input: allow free typing; only commit on blur
+    const tzCustomEl = document.getElementById('tzCustom');
+    tzCustomEl.addEventListener('input', () => {
+      applyTZValidated({ commit: false });
+    });
+    tzCustomEl.addEventListener('blur', () => {
+      if (document.getElementById('tzPreset').value !== '__custom__') return;
+      const applied = applyTZValidated({ commit: true });
+      // if invalid, applyTZValidated already reverted UI
+      if (applied) {
+        render();
+        tickNow();
+      } else {
+        render();
+        tickNow();
+      }
     });
 
     document.getElementById('q').addEventListener('input', render);
