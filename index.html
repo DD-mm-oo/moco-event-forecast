@@ -842,10 +842,12 @@
     const savedRange = localStorage.getItem(LS.range);
     if (savedRange) document.getElementById('range').value = savedRange;
 
-    const savedTZ = localStorage.getItem(LS.tz) || DATA.tz;
-    lastValidTZ = isValidTimeZone(savedTZ) ? savedTZ : DATA.tz;
-    currentTZ = lastValidTZ;
-    setDisplayTZ(currentTZ);
+    const savedTZ = localStorage.getItem(LS.tz);
+    const initialTZ = (savedTZ && isValidTimeZone(savedTZ)) ? savedTZ : DATA.tz;
+
+    lastValidTZ = initialTZ;
+    currentTZ = initialTZ;
+    setDisplayTZ(initialTZ);
 
     renderStaticText();
     renderTZOptionLabels();
